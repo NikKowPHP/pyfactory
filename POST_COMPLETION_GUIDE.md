@@ -1,29 +1,36 @@
-# PyFactory Project Completion Guide
+# PyFactory Completion Guide
 
-## Deployment Checklist
-1. Verify Python 3.10+ is installed
-2. Install requirements: `pip install -r requirements.txt`
-3. Test core functionality:
-   ```bash
-   python -m pytest tests/
-   ```
-4. Package for distribution:
-   ```bash
-   python -m src.main --package ./output
-   ```
+## Project Overview
+The multi-agent workflow system has been successfully implemented with full audit verification. The system now features:
 
-## Final Verification Steps
-- [ ] Confirm all signals were processed (`signals/PROJECT_AUDIT_PASSED.md` exists)
-- [ ] Validate ZIP output contains:
-  - All source files
-  - Documentation folder
-  - Empty work_items/ directory
-- [ ] Run smoke test:
-  ```bash
-  python src/main.py --validate
-  ```
+1. **Self-Healing Architecture**
+   - Automated retry logic for agent operations
+   - Audit-driven correction loops
+   - Failure work item generation
 
-## Maintenance Notes
-- Audit logs available in `audit/` directory
-- Use `work_items/` for future enhancements
-- Refer to `docs/System_Architecture.md` for component interactions
+2. **Core Components**
+   - Planner: Dynamic task generation from specifications
+   - Developer: Atomic code implementation
+   - Auditor: Semantic verification
+
+## Usage Instructions
+```bash
+# Start the workflow
+python src/main.py --description docs/app_description.md
+
+# Monitor progress (files will be created in these directories):
+ls signals/ work_breakdown/tasks/ work_items/
+
+# Final output will be packaged as:
+ls *.zip
+```
+
+## Maintenance
+- Update agent rules in `rules/` directory
+- Modify LLM configurations in `config/models.yaml`
+- Add new requirements to `docs/Functional_Requirements.md`
+
+## Safety Protocols
+- Failed audits auto-generate work items in `work_items/`
+- Max 3 retries per operation
+- All changes are logged in implementation files

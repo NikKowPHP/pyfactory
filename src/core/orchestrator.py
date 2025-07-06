@@ -3,13 +3,14 @@ from .dispatcher import Dispatcher
 from .agents.planner_agent import PlannerAgent
 from .agents.developer_agent import DeveloperAgent
 from .agents.auditor_agent import AuditorAgent
+from .error_handler import retry
 
 def run_pipeline(config: Dict[str, Any], rules: Dict[str, Any]) -> None:
     """Main application loop that orchestrates agent execution.
     
     Uses the Dispatcher to determine and execute the sequence of agents.
     Runs continuously until no next agent is determined.
-    
+
     Args:
         config: System configuration dictionary
         rules: System rules dictionary
@@ -23,7 +24,12 @@ def run_pipeline(config: Dict[str, Any], rules: Dict[str, Any]) -> None:
             
         # Instantiate and execute the appropriate agent
         agent = _get_agent_instance(next_agent_name, config, rules)
-        agent.execute()
+        _execute_agent_with_retry(agent)
+
+@retry(max_attempts=3, delay=1.0)
+def _execute_agent_with_retry(agent) -> None:
+    """Execute agent with retry logic."""
+    agent.execute()
 
 def _get_agent_instance(name: str, config: Dict[str, Any], rules: Dict[str, Any]):
     """Factory method to create agent instances."""
