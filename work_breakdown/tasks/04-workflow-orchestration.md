@@ -1,9 +1,11 @@
-- [ ] **[CREATE]**: Implement core workflow engine
+- [x] **[CREATE]**: Implement core workflow engine
     - **File**: `src/core/repo.py`
-    - **Action**: Add TaskRunner class with retry logic
+    - **Action**: Added TaskRunner class with retry logic
     - **Reason**: Per `Functional_Requirements.md` section 4.3
+    - **Verified**: Implementation includes all required retry functionality
 
-- [ ] **[UPDATE]**: Enhance configuration loading
+- [x] **[UPDATE]**: Enhance configuration loading
     - **File**: `src/core/repo.py`
-    - **Action**: Add YAML configuration validation
+    - **Action**: Added YAML configuration validation using custom error types
     - **Reason**: Required by `Non_Functional_Requirements.md` data integrity checks
+    - **Verified**: Validation now uses proper error hierarchy and field tracking

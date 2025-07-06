@@ -1,5 +1,8 @@
 import argparse
+import json
+import yaml
 from pathlib import Path
+from typing import Any, Dict
 
 def get_version():
     """Read version from docs/app_description.md"""
@@ -13,6 +16,15 @@ def get_version():
 
 __version__ = get_version()
 
+def format_output(data: Dict[str, Any], format_type: str = 'yaml') -> str:
+    """Format output data according to specified format."""
+    if format_type == 'json':
+        return json.dumps(data, indent=2)
+    elif format_type == 'yaml':
+        return yaml.dump(data, sort_keys=False)
+    else:
+        raise ValueError(f"Unsupported format: {format_type}")
+
 def parse_app_description():
     """Parse CLI arguments for app description file path."""
     parser = argparse.ArgumentParser(
@@ -24,6 +36,12 @@ def parse_app_description():
         type=str,
         required=True,
         help='Path to app_description.md file'
+    )
+    parser.add_argument(
+        '--format',
+        choices=['json', 'yaml'],
+        default='yaml',
+        help='Output format (default: yaml)'
     )
     parser.add_argument(
         '-v', '--version',
@@ -44,4 +62,7 @@ def parse_app_description():
     if not desc_path.exists():
         raise FileNotFoundError(f"Description file not found: {desc_path}")
         
-    return desc_path
+    return {
+        'description_path': desc_path,
+        'output_format': args.format
+    }
