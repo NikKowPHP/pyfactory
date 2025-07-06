@@ -1,5 +1,5 @@
+# Requires pip 25.1.1+
 # Core dependencies
-pyyaml==6.0.1
+pyyaml
 
-# Python version requirement
-python>=3.10
+# Requires Python 3.10+
