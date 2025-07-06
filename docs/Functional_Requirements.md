@@ -24,3 +24,4 @@
 5.1 The system must package completed projects as ZIP files  
 5.2 ZIP archives must exclude temporary working files  
 5.3 The CLI must display success/failure status with exit codes (0=success, 1=error)
+5.4 The system must support selectable output formats (JSON, YAML) via a --format command-line argument

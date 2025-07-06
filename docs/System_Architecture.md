@@ -18,10 +18,21 @@
    - Developer: Executes code changes via aider-chat integration  
    - Auditor: Validates output against requirements  
 
-4. **Configuration Manager**  
-   - Loads agent rules from Markdown files  
-   - Maintains LLM model assignments from models.yaml  
-   - Tracks runtime parameters through environment variables  
+4. **Configuration Manager**
+   - Loads agent rules from Markdown files
+   - Maintains LLM model assignments from models.yaml
+   - Tracks runtime parameters through environment variables
+
+5. **Error Handling Framework**
+   - Custom exception classes (BaseError, ValidationError)
+   - Structured error codes with machine-readable formats
+   - Decorators for retry logic (@retry) and consistent formatting (@error_handler)
+   - Implemented in src/core/error_handler.py
+
+6. **Data Serialization Model**
+   - All data objects inherit from BaseModel in src/core/repo.py
+   - Provides standardized to_json() and from_json() methods
+   - Supports consistent serialization across all components
 
 ## Interaction Flow
 ```mermaid
