@@ -9,6 +9,10 @@ An autonomous AI-powered codebase factory that transforms app descriptions into 
 - Model-agnostic LLM integration
 - Self-correcting implementation workflow
 - Audit-powered quality assurance
+- Production-grade security sandboxing:
+  * Restricted file write locations
+  * Path traversal prevention
+  * Dangerous file extension blocking
 
 ## Prerequisites
 - Python 3.10+

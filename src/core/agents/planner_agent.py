@@ -1,7 +1,9 @@
 from pathlib import Path
 from typing import List
+import json
 from ..models import Project, WorkItem
 from .base_agent import BaseAgent
+from ..llm_client import LLMClient, LLMConfig
 
 class PlannerAgent(BaseAgent):
     """Concrete agent implementation for planning tasks."""
@@ -42,46 +44,48 @@ class PlannerAgent(BaseAgent):
             f.write(f"Rules: {self.rules}\n")
     
     def _parse_spec_to_work_items(self, spec_content: str) -> List[WorkItem]:
-        """Convert specification content into actionable work items."""
-        items = []
+        """Convert specification content into actionable work items using LLM."""
+        # Initialize LLM client with planner configuration
+        llm_config = LLMConfig(
+            provider="openrouter",
+            model="deepseek/deepseek-r1-0528:free"
+        )
+        llm_client = LLMClient(llm_config)
         
-        # Parse specification content to generate work items
-        lines = spec_content.splitlines()
-        current_section = None
+        # Prepare system message with rules and guidelines
+        system_message = f"""
+        You are an AI planning agent. Your task is to analyze a project specification
+        and generate a structured work breakdown. Follow these rules:
         
-        for line in lines:
-            # Detect section headers
-            if line.startswith('## '):
-                current_section = line[3:].strip()
-                continue
-                
-            # Generate work items based on sections
-            if current_section == "Key Features & Workflow":
-                if line.strip().startswith('*   **'):
-                    feature = line.strip()[6:-4]  # Remove markdown formatting
-                    items.append(WorkItem(
-                        description=f"Implement {feature}",
-                        status="pending"
-                    ))
-            elif current_section == "Error Handling & Self-Correction":
-                items.append(WorkItem(
-                    description="Implement error handling and self-correction system",
-                    status="pending"
-                ))
-            elif current_section == "Final Output":
-                items.append(WorkItem(
-                    description="Implement final packaging and output system",
-                    status="pending"
-                ))
+        {self.rules}
         
-        # Add standard quality assurance tasks
-        items.append(WorkItem(
-            description="Implement static analysis checks",
-            status="pending"
-        ))
-        items.append(WorkItem(
-            description="Create comprehensive documentation",
-            status="pending"
-        ))
+        Output format must be JSON with this structure:
+        {{
+            "work_items": [
+                {{
+                    "description": "task description",
+                    "status": "pending"
+                }}
+            ]
+        }}
+        """
         
-        return items
+        # Generate work items using LLM
+        try:
+            response = llm_client.prompt(
+                system_message=system_message,
+                user_prompt=f"Specification content:\n{spec_content}"
+            )
+            
+            # Parse LLM response
+            plan = json.loads(response)
+            return [
+                WorkItem(
+                    description=item["description"],
+                    status=item.get("status", "pending")
+                ) for item in plan["work_items"]
+            ]
+            
+        except Exception as e:
+            self.error_handler.log_error(f"Planning failed: {str(e)}")
+            raise RuntimeError("AI planning failed") from e

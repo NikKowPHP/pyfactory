@@ -3,6 +3,7 @@ import re
 from typing import List, Dict, Any
 from ..models import AuditResult
 from .base_agent import BaseAgent
+from ..llm_client import LLMClient, LLMConfig
 
 class AuditorAgent(BaseAgent):
     """Concrete agent implementation for auditing tasks."""
@@ -67,25 +68,48 @@ class AuditorAgent(BaseAgent):
         return True
 
     def _verify_work_item_implementation(self, item: Dict[str, str]) -> bool:
-        """Verify the actual implementation of a work item."""
-        description = item["description"].lower()
+        """Verify work item implementation using semantic AI validation."""
+        # Initialize LLM client with auditor configuration
+        llm_config = LLMConfig(
+            provider="openrouter",
+            model="deepseek/deepseek-chat-v3-0324:free"
+        )
+        llm_client = LLMClient(llm_config)
         
-        # Check for file creation tasks
-        if "create" in description and "file" in description:
-            path = self._extract_file_path(description)
-            if path and not Path(path).exists():
-                return False
-                
-        # Check for implementation tasks
-        if "implement" in description:
-            if "configuration" in description:
-                if not self._verify_config_system():
-                    return False
-            elif "output" in description:
-                if not self._verify_output_system():
-                    return False
-                    
-        return True
+        # Get relevant file content for verification
+        file_content = ""
+        if " in " in item["description"]:
+            path = self._extract_file_path(item["description"])
+            if path and Path(path).exists():
+                with open(path) as f:
+                    file_content = f.read()
+        
+        # Prepare verification prompt
+        system_message = """
+        You are an AI auditor agent. Your task is to verify if the implementation
+        matches the requirement. Respond with ONLY 'YES' or 'NO' based on:
+        - Does the code correctly implement the requirement?
+        - Does it follow all specified rules?
+        """
+        
+        user_prompt = f"""
+        Requirement: {item["description"]}
+        Rules: {self.rules}
+        Code:\n{file_content}
+        
+        Does this implementation fully satisfy the requirement?
+        Respond with ONLY 'YES' or 'NO'.
+        """
+        
+        try:
+            response = llm_client.prompt(
+                system_message=system_message,
+                user_prompt=user_prompt
+            )
+            return response.strip().upper() == "YES"
+        except Exception as e:
+            self.error_handler.log_error(f"Verification failed for {item['description']}: {str(e)}")
+            return False
 
     def _extract_file_path(self, description: str) -> str:
         """Extract file path from work item description."""

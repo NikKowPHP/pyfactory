@@ -30,9 +30,18 @@
    - Implemented in src/core/error_handler.py
 
 6. **Data Serialization Model**
-   - All data objects inherit from BaseModel in src/core/repo.py
-   - Provides standardized to_json() and from_json() methods
-   - Supports consistent serialization across all components
+    - All data objects inherit from BaseModel in src/core/repo.py
+    - Provides standardized to_json() and from_json() methods
+    - Supports consistent serialization across all components
+
+7. **Security Sandboxing**
+    - All file writes are restricted to './generated_project/' directory
+    - Path validation prevents:
+      * Parent directory traversal (../)
+      * System directory access (/etc, /bin, etc.)
+      * Dangerous file extensions (.sh, .exe, etc.)
+    - Implemented in src/core/agents/developer_agent.py
+    - Critical for production safety when using AI-generated code
 
 ## Interaction Flow
 ```mermaid

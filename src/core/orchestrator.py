@@ -1,9 +1,13 @@
 from typing import Optional, Dict, Any
+from pathlib import Path
 from .dispatcher import Dispatcher
 from .agents.planner_agent import PlannerAgent
 from .agents.developer_agent import DeveloperAgent
 from .agents.auditor_agent import AuditorAgent
 from .error_handler import retry
+from .state_manager import StateManager
+from .logger import logger
+from .output_generator import create_zip_archive
 
 def run_pipeline(config: Dict[str, Any], rules: Dict[str, Any]) -> None:
     """Main application loop that orchestrates agent execution.
@@ -15,16 +19,35 @@ def run_pipeline(config: Dict[str, Any], rules: Dict[str, Any]) -> None:
         config: System configuration dictionary
         rules: System rules dictionary
     """
+    # Initialize production components
+    state_manager = StateManager()
     dispatcher = Dispatcher()
+    state_manager.load_state()
+    logger.info("Pipeline started", config=config)
     
     while True:
         next_agent_name = dispatcher.get_next_agent()
         if not next_agent_name:
+            logger.info("Pipeline completed successfully")
+            # Package final output
+            output_dir = Path(config.get("output_dir", "generated_project"))
+            output_zip = Path("output/project.zip")
+            create_zip_archive(output_dir, output_zip)
+            logger.info(f"Created output package: {output_zip}")
             break
             
         # Instantiate and execute the appropriate agent
         agent = _get_agent_instance(next_agent_name, config, rules)
-        _execute_agent_with_retry(agent)
+        state_manager.set_current_phase(f"executing_{next_agent_name}")
+        logger.info(f"Executing agent: {next_agent_name}")
+        
+        try:
+            _execute_agent_with_retry(agent)
+            state_manager.mark_task_complete(next_agent_name)
+        except Exception as e:
+            state_manager.record_error(str(e))
+            logger.error(f"Agent execution failed: {next_agent_name}", error=str(e))
+            raise
 
 @retry(max_attempts=3, delay=1.0)
 def _execute_agent_with_retry(agent) -> None:

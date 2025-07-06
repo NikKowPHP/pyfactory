@@ -1,8 +1,10 @@
 from pathlib import Path
 import re
-from typing import List
+from typing import List, Optional
+import json
 from ..models import WorkItem
 from .base_agent import BaseAgent
+from ..llm_client import LLMClient, LLMConfig
 
 class DeveloperAgent(BaseAgent):
     """Concrete agent implementation for development tasks."""
@@ -44,22 +46,96 @@ class DeveloperAgent(BaseAgent):
         return items
 
     def _implement_work_item(self, item: WorkItem) -> None:
-        """Implement a single work item with actual file operations."""
-        # Handle different types of work items
-        if "create" in item.description.lower():
-            self._handle_create_operation(item)
-        elif "implement" in item.description.lower():
-            self._handle_implementation(item)
-        elif "update" in item.description.lower():
-            self._handle_update_operation(item)
+        """Implement a work item using AI code generation with security sandboxing."""
+        # Initialize LLM client with developer configuration
+        llm_config = LLMConfig(
+            provider="openrouter",
+            model="deepseek/deepseek-chat-v3-0324:free"
+        )
+        llm_client = LLMClient(llm_config)
+        
+        # Get relevant context files
+        context_files = self._get_relevant_context(item.description)
+        context_content = "\n".join(
+            f"File: {path}\n{content}\n"
+            for path, content in context_files.items()
+        )
+        
+        # Prepare system message with rules and guidelines
+        system_message = f"""
+        You are an AI developer agent. Your task is to implement the following work item:
+        {item.description}
+        
+        Follow these rules:
+        {self.rules}
+        
+        Important Security Constraints:
+        1. All file writes must be within the './generated_project/' directory
+        2. No absolute paths or parent directory references (../) allowed
+        3. No system file modifications (e.g., /etc/, /bin/, etc.)
+        
+        Respond with JSON containing:
+        {{
+            "files": [
+                {{
+                    "path": "relative/file/path.ext",
+                    "content": "file content here"
+                }}
+            ]
+        }}
+        """
+        
+        try:
+            # Get AI-generated implementation
+            response = llm_client.prompt(
+                system_message=system_message,
+                user_prompt=f"Context files:\n{context_content}"
+            )
             
-        # Special handling for certain item types
-        if "configuration system" in item.description.lower():
-            self._implement_config_system()
-        elif "output generation" in item.description.lower():
-            self._implement_output_system()
+            # Parse and implement the changes with security checks
+            implementation = json.loads(response)
+            for file_change in implementation["files"]:
+                path = Path(file_change["path"])
+                
+                # Security validation
+                if not self._is_safe_path(path):
+                    raise SecurityError(f"Attempted to write to restricted path: {path}")
+                
+                # Ensure path is within sandbox
+                safe_path = Path("./generated_project") / path
+                safe_path.parent.mkdir(parents=True, exist_ok=True)
+                
+                with open(safe_path, "w") as f:
+                    f.write(file_change["content"])
             
-        item.status = "completed"
+            item.status = "completed"
+            
+        except Exception as e:
+            self.error_handler.log_error(f"Implementation failed for {item.description}: {str(e)}")
+            raise RuntimeError(f"Failed to implement work item: {item.description}") from e
+
+    def _is_safe_path(self, path: Path) -> bool:
+        """Validate that the path is within the allowed sandbox."""
+        # Convert to absolute path for validation
+        try:
+            abs_path = path.resolve()
+        except RuntimeError:
+            return False
+            
+        # Check for parent directory traversal
+        if ".." in str(path):
+            return False
+            
+        # Check against system directories
+        forbidden_prefixes = ["/", "~", "/etc", "/bin", "/usr", "/var", "/tmp"]
+        if any(str(abs_path).startswith(prefix) for prefix in forbidden_prefixes):
+            return False
+            
+        # Check file extension if needed
+        if path.suffix.lower() in [".sh", ".exe", ".bat", ".dll"]:
+            return False
+            
+        return True
 
     def _handle_create_operation(self, item: WorkItem) -> None:
         """Handle creation of new files/directories."""
@@ -91,12 +167,30 @@ class DeveloperAgent(BaseAgent):
             with open(path, "a") as f:
                 f.write(f"\n# Added by work item: {item.description}\n")
 
-    def _extract_path_from_description(self, description: str) -> str:
-        """Try to extract a file path from the work item description."""
-        # Simple pattern matching for now
-        if " in " in description:
-            return description.split(" in ")[-1].strip()
-        return None
+    def _get_relevant_context(self, description: str) -> dict:
+        """Get relevant code context files based on work item description."""
+        context_files = {}
+        
+        # Always include the main project files
+        for path in ["src/main.py", "src/core/models.py"]:
+            if Path(path).exists():
+                with open(path) as f:
+                    context_files[path] = f.read()
+        
+        # Include specific files based on description
+        if "model" in description.lower():
+            model_path = "src/core/models.py"
+            if Path(model_path).exists():
+                with open(model_path) as f:
+                    context_files[model_path] = f.read()
+                    
+        if "api" in description.lower():
+            api_path = "src/core/api.py"
+            if Path(api_path).exists():
+                with open(api_path) as f:
+                    context_files[api_path] = f.read()
+                    
+        return context_files
 
     def _implement_config_system(self) -> None:
         """Implement configuration system components."""
