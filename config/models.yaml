@@ -1,0 +1,17 @@
+# LLM Model Assignments
+agents:
+  product-manager:
+    provider: openrouter
+    model: deepseek/deepseek-r1-0528:free
+  planner:
+    provider: openrouter  
+    model: deepseek/deepseek-r1-0528:free
+  developer:
+    provider: openrouter
+    model: deepseek/deepseek-chat-v3-0324:free
+  auditor:
+    provider: openrouter
+    model: deepseek/deepseek-chat-v3-0324:free
+  dispatcher:
+    provider: openrouter
+    model: openrouter/cypher-alpha:free
