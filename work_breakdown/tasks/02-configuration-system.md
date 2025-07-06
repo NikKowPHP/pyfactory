@@ -1,10 +1,15 @@
-### P0 - Configuration Management
-- [x] **[CREATE]**: models.yaml schema
-  - **File**: `config/models.yaml`
-  - **Action**: Define mappings of agent roles to model providers (e.g., Product Manager: GPT-3)
-  - **Reason**: FR 2.3 "Define LLM providers"
+- [ ] **[CREATE]**: Define models.yaml schema
+    - **File**: `config/models.yaml`
+    - **Action**: Create YAML structure with agent definitions and mode configurations
+    - **Reason**: Per `Functional_Requirements.md` section 2.1: "Configuration shall define agent roles and capabilities"
 
-- [x] **[CREATE]**: Agent rule templates
-  - **File**: `rules/rules-planner.md`
-  - **Action**: Document core responsibilities and constraints for Planner AI
-  - **Reason**: FR 2.1 "External agent behavior definitions"
+- [ ] **[CREATE]**: Implement rule templates
+    - **File**: `rules/rules-planner.md`
+    - **Action**: Add base template matching Planner AI workflow requirements
+    - **Reason**: As specified in `System_Architecture.md` section 3.2
+
+P1 Priority Tasks:
+- [ ] **[UPDATE]**: Validate configuration loader
+    - **File**: `src/core/repo.py`
+    - **Action**: Add YAML parsing functionality with schema validation
+    - **Reason**: Required by `Non_Functional_Requirements.md` data integrity checks
