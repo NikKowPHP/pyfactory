@@ -1,7 +1,17 @@
 import argparse
 from pathlib import Path
 
-__version__ = "1.0.0"  # TODO: Get from project docs
+def get_version():
+    """Read version from docs/app_description.md"""
+    version_line = None
+    with open('docs/app_description.md') as f:
+        for line in f:
+            if line.startswith('# App Name:'):
+                version_line = next(f)  # Get next line for version
+                break
+    return version_line.split(':')[-1].strip() if version_line else "1.0.0"
+
+__version__ = get_version()
 
 def parse_app_description():
     """Parse CLI arguments for app description file path."""

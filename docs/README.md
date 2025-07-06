@@ -10,6 +10,20 @@ An autonomous AI-powered codebase factory that transforms app descriptions into 
 - Self-correcting implementation workflow
 - Audit-powered quality assurance
 
+## Prerequisites
+- Python 3.10+
+- pip package manager
+
+## Installation
+```bash
+# Clone repository
+git clone https://github.com/yourusername/pyfactory.git
+cd pyfactory
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
 ## Getting Started
 ```bash
 python main.py --description path/to/app_description.md
